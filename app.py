@@ -5,60 +5,128 @@ from database import db_config,JWT_SECRET_KEY
 
 app = Flask(__name__)
 
-# Configure the Flask app with a secret key for JWT
-app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY  # Change this to a secure random key
+# # Configure the Flask app with a secret key for JWT
+# app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY  # Change this to a secure random key
 
-# Initialize JWT manager
-jwt = JWTManager(app)
+# # Initialize JWT manager
+# jwt = JWTManager(app)
 def get_db_connection():
     return mysql.connector.connect(**db_config)
 
-@app.route('/register', methods=['POST'])
-def register():
-    data = request.json
-    username = data['username']
-    password = data['password']  # In a real app, hash the password before storing it
+# @app.route('/register', methods=['POST'])
+# def register():
+#     data = request.json
+#     username = data['username']
+#     password = data['password']  # In a real app, hash the password before storing it
 
-    connection = get_db_connection()
-    cursor = connection.cursor()
+#     connection = get_db_connection()
+#     cursor = connection.cursor()
     
-    try:
-        cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
-        connection.commit()
-        return jsonify(message="User registered successfully"), 201
-    except mysql.connector.Error as err:
-        return jsonify(message=f"Error: {err}"), 500
-    finally:
-        cursor.close()
-        connection.close()
+#     try:
+#         cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
+#         connection.commit()
+#         return jsonify(message="User registered successfully"), 201
+#     except mysql.connector.Error as err:
+#         return jsonify(message=f"Error: {err}"), 500
+#     finally:
+#         cursor.close()
+#         connection.close()
 
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.json
-    username = data['username']
-    password = data['password']
+# @app.route('/login', methods=['POST'])
+# def login():
+#     data = request.json
+#     username = data['username']
+#     password = data['password']
 
-    connection = get_db_connection()
-    cursor = connection.cursor(dictionary=True)
+#     connection = get_db_connection()
+#     cursor = connection.cursor(dictionary=True)
     
-    cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
-    user = cursor.fetchone()
+#     cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
+#     user = cursor.fetchone()
     
-    cursor.close()
-    connection.close()
+#     cursor.close()
+#     connection.close()
 
-    if user:
-        access_token = create_access_token(identity={'username': username})
-        return jsonify(access_token=access_token), 200
-    else:
-        return jsonify(message="Invalid credentials"), 401
+#     if user:
+#         access_token = create_access_token(identity={'username': username})
+#         return jsonify(access_token=access_token), 200
+#     else:
+#         return jsonify(message="Invalid credentials"), 401
 
-@app.route('/protected', methods=['GET'])
-@jwt_required()
-def protected():
-    current_user = get_jwt_identity()
-    return jsonify(logged_in_as=current_user), 200
+# @app.route('/protected', methods=['GET'])
+# @jwt_required()
+# def protected():
+#     current_user = get_jwt_identity()
+#     return jsonify(logged_in_as=current_user), 200
 
 
-if __name__ == '__main__':
+
+
+@app.route('/course',methods=['POST','GET'])
+def course_insert() :
+   if request.method=="POST" :
+        try :
+            data = request.json
+            conn =get_db_connection()
+            mycommand=conn.cursor()
+            Is_exists ="select * from course where name =%s"
+            mycommand.execute(Is_exists , [data['name']])
+            result=mycommand.fetchall()
+            if result :
+                mycommand.close()
+                conn.close()                
+                return jsonify({'status_code':400 ,'message':'data already  exists'})
+            else :
+                query="insert into course(name) values (%s);"        
+                mycommand.execute(query ,[data['name']])
+                conn.commit()
+                mycommand.close()
+                conn.close()
+                return jsonify({'status_code':201})
+            
+        except :
+            mycommand.close()
+            conn.close()
+            return jsonify({'status_code':404})
+        
+   if request.method=="GET" :
+       try :
+            
+            conn =get_db_connection()
+            mycommand=conn.cursor()
+            query ="select * from course "
+            mycommand.execute(query)
+            result =mycommand.fetchall()
+            if result :
+                mycommand.close()
+                conn.close()
+                return jsonify({'status_code':200, 'data':result})     
+             
+            else :
+                return jsonify({'status_code':404 , 'message':'the records are empty'})
+       except :
+           return jsonify({'status_code':400})
+       
+       
+        
+        
+        
+@app.route('/course/<int:id>',methods=["GET","POST","DELETE"])
+def update_course(id):
+    if request.method=="POST" :
+        try :
+            conn=get_db_connection()
+            request.args.get("id")
+            data =request.json
+            mycommand =conn.cursor()
+            is_exists ="select * from course where id "
+            query ="UPDATE `course` SET `id`='%s',`name`='%s' WHERE id=%s"
+            mycommand.execute(query,[data['id'],data['name']])
+            conn.commit()
+        except :
+            return jsonify({'status_code':400})
+    
+
+
+if __name__ == '__main__' :
     app.run(debug=True)
