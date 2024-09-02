@@ -85,8 +85,7 @@ def course_insert() :
                 return jsonify({'status_code':201})
             
         except :
-            mycommand.close()
-            conn.close()
+            
             return jsonify({'status_code':404})
         
    if request.method=="GET" :
@@ -116,16 +115,69 @@ def update_course(id):
     if request.method=="POST" :
         try :
             conn=get_db_connection()
-            request.args.get("id")
-            data =request.json
+            id = [request.args.get("id")]
+            name = [request.args.get("name")]
+            # data =request.json
             mycommand =conn.cursor()
-            is_exists ="select * from course where id "
-            query ="UPDATE `course` SET `id`='%s',`name`='%s' WHERE id=%s"
-            mycommand.execute(query,[data['id'],data['name']])
-            conn.commit()
+            Is_exists ="select * from course where id =%s"
+            mycommand.execute(Is_exists,id)
+            result =mycommand.fetchall()
+            if result :
+                query ="UPDATE `course` SET `id`='%s',`name`='%s' WHERE id=%s"
+                mycommand.execute(query,id ,name,id)
+                conn.commit()
+                conn.close()
+                mycommand.close()
+                return jsonify({'status_code':201})
+            else :
+                conn.close()
+                mycommand.close()
+                return jsonify({'status_code':404 ,' message ':' the record doesnot exists '})
+                
+            
         except :
+            conn.close()
+            mycommand.close()
             return jsonify({'status_code':400})
     
+    if request.method=="GET" :
+        id = [request.args.get("id")]
+        name = [request.args.get("name")]
+        
+        try :
+            conn=get_db_connection()
+            mycommand =conn.cursor(dictionary=True)
+            if name and id :
+                 query ="select * from course where name =%s and id =%s"
+                 mycommand.execute(query , name ,id )
+                 conn.close()
+                 mycommand.close()
+                 return jsonify({'status_code':200 , [id ,name] :result})
+            elif name :
+                 query  ="select * from course where name =%s "
+                 result =mycommand.execute(query ,name )            
+                 conn.close()
+                 mycommand.close()
+                 return jsonify({'status_code':200 , name:result})
+            elif id :
+                 query  ="select * from course where id =%s "
+                 result =mycommand.execute(query ,id )            
+                 conn.close()
+                 mycommand.close()
+                 return jsonify({'status_code':200 ,id :result})
+            else :
+                 conn.close()
+                 mycommand.close()
+                 return jsonify({'status_code':404 ,'message': 'the arguments are missing'})
+        except :
+            conn.close()
+            mycommand.close()
+            return jsonify({'status_code':404})
+            
+            
+        
+        
+
 
 
 if __name__ == '__main__' :
