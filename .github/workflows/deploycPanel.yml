@@ -17,7 +17,7 @@ jobs:
         fetch-depth: 2
 
     - name: FTP Deploy
-      uses: SambaSivapopuri/HCET-BATCH-1@v4.3.3 # Use the action from your repository
+      uses: SambaSivapopuri/HCET-BATCH-1@main # Use the action from your repository
       with:
         ftp-server: ${{ secrets.FTP_SERVER }}
         ftp-username: ${{ secrets.FTP_USERNAME }}
