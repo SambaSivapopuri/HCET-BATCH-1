@@ -10,10 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 2
+    
 
     - name: FTP Deploy
       uses: SambaSivapopuri/HCET-BATCH-1@main # Use the action from your repository
