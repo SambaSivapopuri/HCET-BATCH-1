@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: Hcet@amin
+      MYSQL_DATABASE: library
+    ports:
+      - "3306:3306"
+
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
