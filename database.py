@@ -1,8 +1,8 @@
 db_config = {
-    'user': 'treeconn_erp_admin',
-    'password': 'Admin_erp',
-    'host': 'localhost',
-    'database': 'treeconn_batch_1',
+    'user': 'root',
+    'password': 'Hcet@amin',
+    'host': 'db',
+    'database': 'library',
 }
 
 JWT_SECRET_KEY="HCET-BATCH-CSE-2024"
