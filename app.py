@@ -58,7 +58,8 @@ def login():
 def protected():
     current_user = get_jwt_identity()
     return jsonify(logged_in_as=current_user), 200
-
+def test():
+    return "test"
 
 if __name__ == '__main__':
     app.run(debug=True)
