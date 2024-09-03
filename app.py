@@ -67,18 +67,19 @@ def course_insert() :
    if request.method=="POST" :
         try :
             data = request.json
+            name =[data['name']]
             conn =get_db_connection()
             mycommand=conn.cursor()
             Is_exists ="select * from course where name =%s"
-            mycommand.execute(Is_exists , [data['name']])
-            result=mycommand.fetchall()
+            mycommand.execute(Is_exists , name)
+            result=mycommand.fetchone()
             if result :
                 mycommand.close()
                 conn.close()                
                 return jsonify({'status_code':400 ,'message':'data already  exists'})
             else :
-                query="insert into course(name) values (%s);"        
-                mycommand.execute(query ,[data['name']])
+                query="insert into course (name) values (%s)"        
+                mycommand.execute(query ,name)
                 conn.commit()
                 mycommand.close()
                 conn.close()
@@ -86,7 +87,7 @@ def course_insert() :
             
         except :
             
-            return jsonify({'status_code':404})
+            return jsonify({'status_code':404, "error":"the code isnt runnig"})
         
    if request.method=="GET" :
        try :
@@ -102,93 +103,96 @@ def course_insert() :
                 return jsonify({'status_code':200, 'data':result})     
              
             else :
-                return jsonify({'status_code':404 , 'message':'the records are empty'})
+                return jsonify({'status_code':400 , 'message':'the records are empty'})
        except :
-           return jsonify({'status_code':400})
+           return jsonify({'status_code':404})
        
        
         
         
         
-@app.route('/course/<int:id>',methods=["GET","POST","DELETE"])
+@app.route('/course/<int:id>',methods=["GET","PUT","DELETE"])
 def update_course(id):
-    if request.method=="POST" :
+    if request.method=="PUT" :
         try :
-            conn=get_db_connection()
-            id = int(request.args.get("id"))
-            name = request.args.get("name")
-            # data =request.json
+            conn=get_db_connection()            
+            data =request.json
+            name=data['name']
             mycommand =conn.cursor()
             Is_exists ="select * from course where id =%s"
-            mycommand.execute(Is_exists,id)
-            result =mycommand.fetchall()
+            mycommand.execute(Is_exists,[id] )
+            result =mycommand.fetchone()
+            
+            
+            
             if result :
-                query ="UPDATE `course` SET `id`='%s',`name`='%s' WHERE id=%s"
-                mycommand.execute(query,id ,name,id)
+                query ="UPDATE course SET  name = %s WHERE id=%s"
+                mycommand.execute(query, [name,id])
                 conn.commit()
                 conn.close()
                 mycommand.close()
-                return jsonify({'status_code':201})
+                return jsonify({'status_code':201,'data':[result]})
             else :
                 conn.close()
                 mycommand.close()
                 return jsonify({'status_code':404 ,' message ':' the record doesnot exists '})
-                
             
         except :
-            conn.close()
-            mycommand.close()
-            return jsonify({'status_code':400})
+            
+            return jsonify({'status_code':400, 'message':'error'})
     
     if request.method=="GET" :
-        id = int(request.args.get("id"))
-        name = request.args.get("name")
+        
+       
+        
         
         try :
             conn=get_db_connection()
             mycommand =conn.cursor(dictionary=True)
-            if name and id :
-                 query ="select * from course where name =%s and id =%d"
-                 result = mycommand.execute(query , name ,id )
-                 conn.close()
-                 mycommand.close()
-                 return jsonify({'status_code':200 , [id ,name] :result})
-            elif name :
-                 query  ="select * from course where name =%s "
-                 result =mycommand.execute(query ,name )            
-                 conn.close()
-                 mycommand.close()
-                 return jsonify({'status_code':200 , name:result})
-            elif id :
-                 query  ="select * from course where id =%d "
-                 result =mycommand.execute(query ,id )            
-                 conn.close()
-                 mycommand.close()
-                 return jsonify({'status_code':200 ,id :result})
+           
+             
+            if id :
+                 query  ="select * from course where id =%s "
+                 mycommand.execute(query ,[id])
+                 result =mycommand.fetchone()                      
+                 
+                 if result :
+                     conn.close()
+                     mycommand.close()
+                     return jsonify({'status_code':200 ,'message' :[result]})
+                 else :
+                     conn.close()
+                     mycommand.close()
+                     return jsonify({'status_code':400 ,'message' :'the records are not existing'})
+                     
+                       
+             
             else :
                  conn.close()
                  mycommand.close()
                  return jsonify({'status_code':404 ,'message': 'the arguments are missing'})
+             
         except :
-            conn.close()
-            mycommand.close()
-            return jsonify({'status_code':404 , 'messsage ':'error'})
+            
+            return jsonify({'status_code':500 , 'messsage ':'error'})
+        
         
     if request.method=="DELETE" :
         try :
-            id = int(request.args.get("id"))
+        
             conn =get_db_connection()
             mycommand =conn.cursor(dictionary=True)
-            exists ="select * from course where id =%d"
-            mycommand.execute(exists ,id)
-            Is_exists =mycommand.fetchall()
+            exists ="select * from course where id =%s"
+            mycommand.execute(exists ,[id])
+            Is_exists =mycommand.fetchone()
+            
             if Is_exists :
-                query ="delete  from course where id =%d"
-                mycommand.execute(query,id)
+                query ="delete  from course where id =%s"
+                mycommand.execute(query,[id])
                 conn.commit()
                 mycommand.close()
                 conn.close()
-                return jsonify({'status_code':204 ,id:'the record deleted successfully'})
+                return jsonify({'status_code':204 , 'message' :'the record  deleted successfully'})
             else :
                 mycommand.close()
                 conn.close()
@@ -202,297 +206,295 @@ def update_course(id):
         
         
         
-@app.route('/year',methods =['POST','GET'])
-def year_insert() :
-     if request.method=="POST" :
-        try :
-            data = request.json
-            conn =get_db_connection()
-            mycommand=conn.cursor()
-            exists="select * from year where id=%s"
-            mycommand.execute(exists,[data['id']])
-            Is_exists =mycommand.fetchall()
-            if Is_exists:
-                mycommand.close()
-                conn.close()
-                return jsonify({'status_code':400,'message':'the record already existed '})
+# @app.route('/year',methods =['POST','GET'])
+# def year_insert() :
+#      if request.method=="POST" :
+#         try :
+#             data = request.json
+#             conn =get_db_connection()
+#             mycommand=conn.cursor()
+#             exists="select * from year where id=%s"
+#             mycommand.execute(exists,[data['id']])
+#             Is_exists =mycommand.fetchall()
+#             if Is_exists:
+#                 mycommand.close()
+#                 conn.close()
+#                 return jsonify({'status_code':400,'message':'the record already existed '})
                 
-            else :
-                query ="insert into year (year) values (%s);"
-                result =mycommand.execute(query,[data['year']])
-                conn.commit()
-                mycommand.close()
-                conn.close()
-                return  jsonify({'status_code':201,'data':result })
-        except :
+#             else :
+#                 query ="insert into year (year) values (%s);"
+#                 result =mycommand.execute(query,[data['year']])
+#                 conn.commit()
+#                 mycommand.close()
+#                 conn.close()
+#                 return  jsonify({'status_code':201,'data':result })
+#         except :
             
             
-            return jsonify({'status_code':404})
+#             return jsonify({'status_code':404})
         
         
         
-     if request.method=="GET" :
-        try :
-            data = request.json
-            id = int(request.args.get("id"))
+#      if request.method=="GET" :
+#         try :
+#             data = request.json
+#             id = int(request.args.get("id"))
             
-            conn =get_db_connection()
-            mycommand=conn.cursor(dictionary=True)
-            exists="select * from year where id=%d"
-            mycommand.execute(exists,id)
-            Is_exists =mycommand.fetchall()
-            if Is_exists :
+#             conn =get_db_connection()
+#             mycommand=conn.cursor(dictionary=True)
+#             exists="select * from year where id=%d"
+#             mycommand.execute(exists,id)
+#             Is_exists =mycommand.fetchall()
+#             if Is_exists :
                 
-                mycommand.execute(exists,id)
-                mycommand.fetchall()
-                mycommand.close()
-                conn.close()
-                return jsonify({'status_code':200})
-            else :
-                mycommand.close()
-                conn.close()
-                return jsonify({'status_code':400 , 'message':'the record doesnt exists '})
-                
-            
-             
-        except :
-            
-            conn.close()
-            return jsonify({'status_code':404})
-        
-        
-@app.route('/year/<int:id>',methods =['POST','GET','DELETE'])
-def year_update():
-    if request.method=='POST' :
-        try :
-            conn=get_db_connection()
-            mycommand=conn.cursor()
-            id=int(request.args.get('id'))
-            year =int(request.args.get('year'))
-            exists ="select * from year where id =%d"
-            mycommand.execute(exists ,id)
-            Is_exists =mycommand.fetchall()
-            if Is_exists :
-                query ="update year set id =%d and year=%d where id =%d;"
-                mycommand.execute(query ,id ,year,id)
-                conn.commit()
-                mycommand.close()
-                conn.close()
-                return jsonify({'status_code':204 , id :'the record has been updated successfully'})
-            else :
-                conn.close()
-                mycommand.close()
-                return jsonify({'status_code':400, 'message':'the record doesnt exists'})
-        except :
-            conn.close()
-            return jsonify({'status_code':404})
-    
-    
-    if request.method=="GET" :
-        try :
-            
-            conn =get_db_connection()
-            id =int(request.args.get('id'))
-            year=int(request.args.get('year'))
-            mycommand=conn.cursor(dictionary=True)
-            exists ="select * from year where id =%d"
-            mycommand.execute(exists ,id )
-            Is_exists=mycommand.fetchall()
-            if Is_exists :
-                mycommand.execute(exists ,id )
-                mycommand.fetchall()
-                conn.close()
-                mycommand.close()
-                return jsonify({'status_code':200})
-            else :
-                conn.close()
-                mycommand.close()
-                return jsonify({'status_code':400, 'message':'the record doesnot exists'})
-            
-                
-                
-        except :
-            conn.close()
-            
-            return jsonify({'status_code':404, 'message':'the record doesnot exists'})
-            
-    if request.method=="DELETE" :
-        try :
-            
-            conn =get_db_connection()
-            id =int(request.args.get('id'))
-            year=int(request.args.get('year'))
-            mycommand=conn.cursor(dictionary=True)
-            exists ="select * from year where id =%d"
-            mycommand.execute(exists ,id )
-            Is_exists=mycommand.fetchall()
-            if Is_exists :
-                query ="delete year where id =%d"
-                mycommand.execute(query,id)
-                conn.commit()
-                conn.close()
-                mycommand.close()
-                return jsonify({'status_code':204})
-            else :
-                conn.close()
-                mycommand.close()
-                return jsonify({'status_code':400, 'message':'the record doesnot exists'})
-            
-                
-                
-        except :
-            conn.close()
-            mycommand.close()
-            return jsonify({'status_code':404, 'message':'the record doesnot exists'})
-        
-        
-            
-
-
-@app.route('/sem',methods =['POST','GET'])
-def sem_insert() :
-     if request.method=="POST" :
-        try :
-            data = request.json
-            conn =get_db_connection()
-            mycommand=conn.cursor()
-            exists="select * from sem where id=%s"
-            mycommand.execute(exists,[data['id']])
-            Is_exists =mycommand.fetchall()
-            if Is_exists:
-                mycommand.close()
-                conn.close()
-                return jsonify({'status_code':400,'message':'the record already existed '})
-                
-            else :
-                query ="insert into sem (sem) values (%s);"
-                result =mycommand.execute(query,[data['sem']])
-                conn.commit()
-                mycommand.close()
-                conn.close()
-                return  jsonify({'status_code':201,'data':result })
-        except :
-            mycommand.close()
-            conn.close()
-            return jsonify({'status_code':404})
-     if request.method=="GET" :
-        try :
-            data = request.json
-            id = int(request.args.get("id"))
-            
-            conn =get_db_connection()
-            mycommand=conn.cursor(dictionary=True)
-            exists="select * from sem where id=%d"
-            mycommand.execute(exists,id)
-            Is_exists =mycommand.fetchall()
-            if Is_exists :
-                
-                mycommand.execute(exists,id)
-                mycommand.fetchall()
-                mycommand.close()
-                conn.close()
-                return jsonify({'status_code':200})
-            else :
-                mycommand.close()
-                conn.close()
-                return jsonify({'status_code':400 , 'message':'the record doesnt exists '})
+#                 mycommand.execute(exists,id)
+#                 mycommand.fetchall()
+#                 mycommand.close()
+#                 conn.close()
+#                 return jsonify({'status_code':200})
+#             else :
+#                 mycommand.close()
+#                 conn.close()
+#                 return jsonify({'status_code':400 , 'message':'the record doesnt exists '})
                 
             
              
-        except :
+#         except :
             
-            conn.close()
-            return jsonify({'status_code':404})
+#             conn.close()
+#             return jsonify({'status_code':404})
+        
+        
+# @app.route('/year/<int:id>',methods =['POST','GET','DELETE'])
+# def year_update():
+#     if request.method=='POST' :
+#         try :
+#             conn=get_db_connection()
+#             mycommand=conn.cursor()
+#             id=int(request.args.get('id'))
+#             year =int(request.args.get('year'))
+#             exists ="select * from year where id =%d"
+#             mycommand.execute(exists ,id)
+#             Is_exists =mycommand.fetchall()
+#             if Is_exists :
+#                 query ="update year set id =%d and year=%d where id =%d;"
+#                 mycommand.execute(query ,id ,year,id)
+#                 conn.commit()
+#                 mycommand.close()
+#                 conn.close()
+#                 return jsonify({'status_code':204 , id :'the record has been updated successfully'})
+#             else :
+#                 conn.close()
+#                 mycommand.close()
+#                 return jsonify({'status_code':400, 'message':'the record doesnt exists'})
+#         except :
+#             conn.close()
+#             return jsonify({'status_code':404})
+    
+    
+#     if request.method=="GET" :
+#         try :
+            
+#             conn =get_db_connection()
+#             id =int(request.args.get('id'))
+#             year=int(request.args.get('year'))
+#             mycommand=conn.cursor(dictionary=True)
+#             exists ="select * from year where id =%d"
+#             mycommand.execute(exists ,id )
+#             Is_exists=mycommand.fetchall()
+#             if Is_exists :
+#                 mycommand.execute(exists ,id )
+#                 mycommand.fetchall()
+#                 conn.close()
+#                 mycommand.close()
+#                 return jsonify({'status_code':200})
+#             else :
+#                 conn.close()
+#                 mycommand.close()
+#                 return jsonify({'status_code':400, 'message':'the record doesnot exists'})
+            
+                
+                
+#         except :
+#             conn.close()
+            
+#             return jsonify({'status_code':404, 'message':'the record doesnot exists'})
+            
+#     if request.method=="DELETE" :
+#         try :
+            
+#             conn =get_db_connection()
+#             id =int(request.args.get('id'))
+#             year=int(request.args.get('year'))
+#             mycommand=conn.cursor(dictionary=True)
+#             exists ="select * from year where id =%d"
+#             mycommand.execute(exists ,id )
+#             Is_exists=mycommand.fetchall()
+#             if Is_exists :
+#                 query ="delete year where id =%d"
+#                 mycommand.execute(query,id)
+#                 conn.commit()
+#                 conn.close()
+#                 mycommand.close()
+#                 return jsonify({'status_code':204})
+#             else :
+#                 conn.close()
+#                 mycommand.close()
+#                 return jsonify({'status_code':400, 'message':'the record doesnot exists'})
+            
+                
+                
+#         except :
+#             conn.close()
+#             mycommand.close()
+#             return jsonify({'status_code':404, 'message':'the record doesnot exists'})
+        
+        
+            
+
+
+# @app.route('/sem',methods =['POST','GET'])
+# def sem_insert() :
+#      if request.method=="POST" :
+#         try :
+#             data = request.json
+#             conn =get_db_connection()
+#             mycommand=conn.cursor()
+#             exists="select * from sem where id=%s"
+#             mycommand.execute(exists,[data['id']])
+#             Is_exists =mycommand.fetchall()
+#             if Is_exists:
+#                 mycommand.close()
+#                 conn.close()
+#                 return jsonify({'status_code':400,'message':'the record already existed '})
+                
+#             else :
+#                 query ="insert into sem (sem) values (%s);"
+#                 result =mycommand.execute(query,[data['sem']])
+#                 conn.commit()
+#                 mycommand.close()
+#                 conn.close()
+#                 return  jsonify({'status_code':201,'data':result })
+#         except :
+#             mycommand.close()
+#             conn.close()
+#             return jsonify({'status_code':404})
+#      if request.method=="GET" :
+#         try :
+#             data = request.json
+#             id = int(request.args.get("id"))
+            
+#             conn =get_db_connection()
+#             mycommand=conn.cursor(dictionary=True)
+#             exists="select * from sem where id=%d"
+#             mycommand.execute(exists,id)
+#             Is_exists =mycommand.fetchall()
+#             if Is_exists :
+                
+#                 mycommand.execute(exists,id)
+#                 mycommand.fetchall()
+#                 mycommand.close()
+#                 conn.close()
+#                 return jsonify({'status_code':200})
+#             else :
+#                 mycommand.close()
+#                 conn.close()
+#                 return jsonify({'status_code':400 , 'message':'the record doesnt exists '})
+                
+            
+             
+#         except :
+            
+#             conn.close()
+#             return jsonify({'status_code':404})
         
         
         
 
 
-@app.route('/sem/<int:id>',methods =['POST','GET','DELETE'])
-def sem_update():
-    if request.method=='POST' :
-        try :
-            conn=get_db_connection()
-            mycommand=conn.cursor()
-            id=int(request.args.get('id'))
-            sem =int(request.args.get('sem'))
-            exists ="select * from sem where id =%d"
-            mycommand.execute(exists ,id)
-            Is_exists =mycommand.fetchall()
-            if Is_exists :
-                query ="update sem set id =%d and sem=%d where id =%d;"
-                mycommand.execute(query ,id ,sem,id)
-                conn.commit()
-                mycommand.close()
-                conn.close()
-                return jsonify({'status_code':204 , id :'the record has been updated successfully'})
-            else :
-                mycommand.close()
-                conn.close()
+# @app.route('/sem/<int:id>',methods =['POST','GET','DELETE'])
+# def sem_update(id):
+#     if request.method=='POST' :
+#         try :
+#             conn=get_db_connection()
+#             mycommand=conn.cursor()
+#             data =request.get_json
+#             exists ="select * from sem where id =%d"
+#             mycommand.execute(exists ,[data['id']])
+#             Is_exists =mycommand.fetchall()
+#             if Is_exists :
+#                 query ="update sem set id =%d and sem=%d where id =%d;"
+#                 mycommand.execute(query ,[data['id'] ,['sem'],['id']])
+#                 conn.commit()
+#                 mycommand.close()
+#                 conn.close()
+#                 return jsonify({'status_code':204 , id :'the record has been updated successfully'})
+#             else :
+#                 mycommand.close()
+#                 conn.close()
                
-                return jsonify({'status_code':400, 'message':'the record doesnt exists'})
-        except :
-            conn.close()
-            return jsonify({'status_code':404})
+#                 return jsonify({'status_code':400, 'message':'the record doesnt exists'})
+#         except :
+            
+#             return jsonify({'status_code':404})
     
     
-    if request.method=="GET" :
-        try :
+#     if request.method=="GET" :
+#         try :
             
-            conn =get_db_connection()
-            id =int(request.args.get('id'))
-            sem=int(request.args.get('sem'))
-            mycommand=conn.cursor(dictionary=True)
-            exists ="select * from sem where id =%d"
-            mycommand.execute(exists ,id )
-            Is_exists=mycommand.fetchall()
-            if Is_exists :
-                mycommand.execute(exists ,id )
-                mycommand.fetchall()
-                conn.close()
-                mycommand.close()
-                return jsonify({'status_code':200})
-            else :
-                conn.close()
-                mycommand.close()
-                return jsonify({'status_code':400, 'message':'the record doesnot exists'})
-            
-                
-                
-        except :
-            
-            
-            return jsonify({'status_code':404, 'message':'the record doesnot exists'})
-            
-    if request.method=="DELETE" :
-        try :
-            
-            conn =get_db_connection()
-            id =int(request.args.get('id'))
-            sem=int(request.args.get('sem'))
-            mycommand=conn.cursor(dictionary=True)
-            exists ="select * from sem where id =%d"
-            mycommand.execute(exists ,id )
-            Is_exists=mycommand.fetchall()
-            if Is_exists :
-                query ="delete sem where id =%d"
-                mycommand.execute(query,id)
-                conn.commit()
-                mycommand.close()
-                conn.close()
-                
-                return jsonify({'status_code':204})
-            else :
-                conn.close()
-                mycommand.close()
-                return jsonify({'status_code':400, 'message':'the record doesnot exists'})
+#             conn =get_db_connection()
+#             id =int(request.args.get('id'))
+#             sem=int(request.args.get('sem'))
+#             mycommand=conn.cursor(dictionary=True)
+#             exists ="select * from sem where id =%d"
+#             mycommand.execute(exists ,id )
+#             Is_exists=mycommand.fetchall()
+#             if Is_exists :
+#                 mycommand.execute(exists ,id )
+#                 mycommand.fetchall()
+#                 conn.close()
+#                 mycommand.close()
+#                 return jsonify({'status_code':200})
+#             else :
+#                 conn.close()
+#                 mycommand.close()
+#                 return jsonify({'status_code':400, 'message':'the record doesnot exists'})
             
                 
                 
-        except :
-            conn.close()
-            mycommand.close()
-            return jsonify({'status_code':404, 'message':'the record doesnot exists'})
+#         except :
+            
+            
+#             return jsonify({'status_code':404, 'message':'the record doesnot exists'})
+            
+#     if request.method=="DELETE" :
+#         try :
+            
+#             conn =get_db_connection()
+#             id =int(request.args.get('id'))
+#             mycommand=conn.cursor(dictionary=True)
+#             exists ="select * from sem where id =%d"
+#             mycommand.execute(exists ,id )
+#             Is_exists=mycommand.fetchall()
+#             if Is_exists :
+#                 query ="delete sem where id =%d"
+#                 mycommand.execute(query,id)
+#                 conn.commit()
+#                 mycommand.close()
+#                 conn.close()
+                
+#                 return jsonify({'status_code':204})
+#             else :
+#                 conn.close()
+#                 mycommand.close()
+#                 return jsonify({'status_code':400, 'message':'the record doesnot exists'})
+            
+                
+                
+#         except :
+#             conn.close()
+#             mycommand.close()
+#             return jsonify({'status_code':404, 'message':'the record doesnot exists'})
         
         
             
